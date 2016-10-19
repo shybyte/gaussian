@@ -1,4 +1,3 @@
-//!
 //!  gaussian.rs
 //!
 //!  Created by Mitchell Nordine at 03:28AM on May 30, 2014.
@@ -9,7 +8,7 @@ extern crate num;
 extern crate rand;
 extern crate utils;
 
-use utils::{Epsilon, map_range};
+use utils::map_range;
 use rand::{Rand, random};
 use std::cell::RefCell;
 use std::fmt::Debug;
@@ -20,11 +19,18 @@ use num::{Float, FromPrimitive};
 thread_local!(static MAYBE_NEXT_VALUE: RefCell<Option<f64>> = RefCell::new(None));
 
 #[inline]
-fn two<F>() -> F where F: Float { let one: F = F::one(); one + one }
+fn two<F>() -> F
+    where F: Float
+{
+    let one: F = F::one();
+    one + one
+}
 
 /// Gen raw gaussian value with dist. at 0.
 #[inline]
-pub fn gen_raw<F>() -> F where F: Float + FromPrimitive + Rand {
+pub fn gen_raw<F>() -> F
+    where F: Float + FromPrimitive + Rand
+{
     MAYBE_NEXT_VALUE.with(|maybe_next_value| {
         let maybe_next = *maybe_next_value.borrow();
         if let Some(next_value) = maybe_next {
@@ -37,7 +43,7 @@ pub fn gen_raw<F>() -> F where F: Float + FromPrimitive + Rand {
                 va = two * random::<F>() - one;
                 vb = two * random::<F>() - one;
                 s = va * vb + va * vb
-            };
+            }
             let multi = ((-two) * s.abs().ln() / s).abs().sqrt();
             *maybe_next_value.borrow_mut() = (vb * multi).to_f64();
             va * multi
@@ -49,7 +55,8 @@ pub fn gen_raw<F>() -> F where F: Float + FromPrimitive + Rand {
 /// Generated value will always be 0.0 <= value < 1.0.
 #[inline]
 pub fn gen<F>(n: F, randomness: f32) -> F
-where F: Epsilon + Float + Rand + FromPrimitive + Debug {
+    where F: Float + Rand + FromPrimitive + Debug
+{
     let (zero, one): (F, F) = (F::zero(), F::one());
     assert!(n >= zero && n <= one, "Gaussian::gen : given `n` ({:?}) must \
             be a percentage between 0 and 1.", n);
@@ -59,9 +66,8 @@ where F: Epsilon + Float + Rand + FromPrimitive + Debug {
         return one - F::epsilon();
     }
 
-    let mut ans = gen_raw::<F>()
-                * FromPrimitive::from_f32(randomness.powf(2.0)).unwrap()
-                + (n * two::<F>() - one);
+    let mut ans = gen_raw::<F>() * FromPrimitive::from_f32(randomness.powf(2.0)).unwrap() +
+                  (n * two::<F>() - one);
     ans = map_range(ans, -one, one, zero, one);
     if ans >= one || ans < zero {
         gen::<F>(n, randomness)
@@ -73,9 +79,9 @@ where F: Epsilon + Float + Rand + FromPrimitive + Debug {
 /// Gen gaussian value mapped to a range.
 #[inline]
 pub fn gen_map<F>(n: F, randomness: f32, min_range: F, max_range: F) -> F
-where F: Epsilon + Float + Rand + FromPrimitive + Debug {
+    where F: Float + Rand + FromPrimitive + Debug
+{
     let (zero, one): (F, F) = (F::zero(), F::one());
     let perc = map_range(n, min_range, max_range, zero, one);
     map_range(gen(perc, randomness), zero, one, min_range, max_range)
 }
-
